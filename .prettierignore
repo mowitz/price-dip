@@ -1,0 +1,4 @@
+build
+coverage
+**/*.graphql
+node_modules
