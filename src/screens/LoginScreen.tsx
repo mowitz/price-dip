@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react"
-
+import Button from "../components/input/Button"
+import Screen from "../components/layout/Screen"
+import TextInput from "../components/input/TextInput"
 import { useNavigate } from "react-router-dom"
-
-import Screen from "../components/Screen"
 
 function LoginScreen() {
   const navigate = useNavigate()
@@ -12,18 +12,34 @@ function LoginScreen() {
   const handleSetToken = useCallback(() => {
     if (token !== "") {
       localStorage.setItem("token", token ?? "")
-      navigate("/")
+      console.log("Navigate...")
+      navigate("/", { replace: true })
     }
   }, [navigate, token])
 
+  const clearToken = useCallback(() => {
+    localStorage.removeItem("token")
+    setToken("")
+  }, [])
+
   return (
-    <Screen>
+    <Screen title="API nyckel">
       <p>
         Mata in din Tibber API nyckel, du kan få tag på den genom att logga in
-        här, https://developer.tibber.com/.
+        här,{" "}
+        <span>
+          <a href="https://developer.tibber.com/">
+            https://developer.tibber.com/
+          </a>
+        </span>
+        .
       </p>
-      <input value={token} onChange={(e) => setToken(e.target.value)}></input>
-      <button onClick={handleSetToken}>Bekräfta</button>
+      <TextInput
+        value={token}
+        onChange={(value) => setToken(value)}
+      ></TextInput>
+      <Button disabled={token === ""} title="Spara" onClick={handleSetToken} />
+      <Button title="Glöm nyckeln" onClick={clearToken} />
     </Screen>
   )
 }

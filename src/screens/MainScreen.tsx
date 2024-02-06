@@ -1,110 +1,81 @@
 import "./MainScreen.css"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import useTibberPrices, { Price } from "../hooks/useTibberPrices"
 import { Link } from "react-router-dom"
-import Screen from "../components/Screen"
-import { gql } from "../generated/gql"
-import { useQuery } from "@apollo/client"
+import PriceGraph from "../components/PriceGraph"
+import RangeSlider from "../components/input/RangeSlider"
+import Screen from "../components/layout/Screen"
+import { formatDateDifference } from "../util/time"
 
-const GET_TIBBER_PRICES = gql(`
-  query GetTibberPrices {
-    viewer {
-      homes {
-        currentSubscription {
-          priceInfo {
-            today {
-              total
-              startsAt
-            }
-            tomorrow {
-              total
-              startsAt
-            }
-          }
-        }
-      }
-    }
-  }
-`)
+const DISHWASHER_KW = 1.2
 
 function MainScreen() {
-  const { loading, error, data } = useQuery(GET_TIBBER_PRICES)
-  const [withinHours, setWithinHours] = useState(6)
+  const { loading, error, prices } = useTibberPrices()
+  const [maxWaitHours, setMaxWaitHours] = useState(0)
+  const [now, setNow] = useState(new Date())
 
-  type PriceInfo2 = {
-    startsAt: string
-    total: number
-  }
+  useEffect(() => {
+    const handle = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(handle)
+  }, [])
 
-  const allPrices = useMemo<PriceInfo2[]>(() => {
-    const now = new Date()
-
-    const today =
-      data?.viewer.homes[0]?.currentSubscription?.priceInfo?.today ?? []
-    const tomorrow =
-      data?.viewer.homes[0]?.currentSubscription?.priceInfo?.tomorrow ?? []
-
-    return [...today, ...tomorrow].filter(
-      (priceInfo) => priceInfo && priceInfo.startsAt && priceInfo.total && new Date(priceInfo.startsAt) > now,
-    ) as PriceInfo2[]
-  }, [data])
-
-  const range = useMemo(() => [0, allPrices.length - 1], [allPrices.length])
-
-  const lowestPrice = useMemo(
-    () => {
-      const now = new Date()
-      const c = now.setHours(now.getHours() + withinHours);
-
-      return allPrices.reduce<PriceInfo2 | null>((acc, curr) => {
-        if (!acc && new Date(curr.startsAt) < new Date(c)) {
-          return curr
-        }
-
-        if (curr?.total && acc?.total && curr?.total < acc?.total && new Date(curr.startsAt) < new Date(c)) {
-          return curr
-        }
-
-        return acc
-      }, null)},
-    [allPrices, withinHours],
-  )
-
-  const timeToLowestPrice = useMemo(() => {
-    if (!lowestPrice?.startsAt) {
-      return "-"
+  const lowestPrice = useMemo(() => {
+    if (maxWaitHours === 0) {
+      return prices[0]
     }
 
-    const now = new Date()
-    const lowest = new Date(lowestPrice.startsAt)
+    const waitUntil = new Date(now)
+    waitUntil.setHours(waitUntil.getHours() + maxWaitHours)
 
-    return (lowest.getTime() - now.getTime()) / 1000 / 60 / 60
-  }, [lowestPrice])
+    return prices.reduce<Price | undefined>((acc, curr) => {
+      if (
+        new Date(curr.startsAt) < waitUntil &&
+        (!acc || curr.total < acc.total)
+      ) {
+        return curr
+      }
+      return acc
+    }, undefined)
+  }, [maxWaitHours, now, prices])
 
-  if (loading) return <p>Loading...</p>
-  if (error) return <p>Error : {error.message}</p>
+  const [timeUntilDip, savings, price] = useMemo(() => {
+    if (!lowestPrice) {
+      return ["-", "-", "-"]
+    }
+
+    return [
+      formatDateDifference(new Date(lowestPrice.startsAt), now),
+      ((prices[0].total - lowestPrice.total) * DISHWASHER_KW).toFixed(2),
+      lowestPrice?.total.toFixed(2),
+      [lowestPrice?.total],
+    ]
+  }, [lowestPrice, now, prices])
 
   return (
-    <Screen>
-      <p>{`Find dip within ${withinHours} hours`}</p>
-      <p>{range[0]}</p>
-      <input
-        type="range"
-        min={range[0]}
-        max={range[1]}
-        value={withinHours}
-        onChange={(e) => setWithinHours(Number(e.target.value))}
-      ></input>
-      <p>{range[1]}</p>
-
-      {timeToLowestPrice && <p>{`Time to: ${timeToLowestPrice}`}</p>}
-      {lowestPrice && <p>{`Lowest price: ${lowestPrice.total}`}</p>}
-      {allPrices.map((price, index) => (
-        <p
-          key={index}
-        >{`${new Date(price.startsAt).toLocaleTimeString()} - ${price.total}`}</p>
-      ))}
-      <Link to="login">login</Link>
+    <Screen error={error} loading={loading} title="Hitta nästa prisdipp">
+      <p>Hur länge orkar du vänta?</p>
+      <RangeSlider
+        range={[0, prices.length - 1]}
+        unit="h"
+        value={maxWaitHours}
+        onChange={(value) => setMaxWaitHours(value)}
+      />
+      <p>
+        {`Närmsta prisdipp inom ${maxWaitHours} timmar inträffar om `}
+        <strong>{timeUntilDip}</strong>
+        {` timmar. Priset är då ${price} kr.`}
+      </p>
+      <h3>Spara</h3>
+      <p>{`Du sparar ungefär ${savings} kr på att vänta med diskmaskinen.`}</p>
+      <h3>Priskurvan</h3>
+      <div className="MainScreen-graphContainer">
+        <PriceGraph lowestPrice={lowestPrice} prices={prices} />
+      </div>
+      <h3>Övrigt</h3>
+      <p>
+        Hantera API nyckeln <Link to="login">här</Link>.
+      </p>
     </Screen>
   )
 }
