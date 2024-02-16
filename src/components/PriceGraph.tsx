@@ -41,6 +41,7 @@ function PriceGraph({ lowestPrice, prices }: Props) {
           <ReferenceLine x={lowestPrice.startsAt} stroke="#fd29cc" />
         )}
         <Line
+          isAnimationActive={false}
           type="monotone"
           dataKey="total"
           dot={false}

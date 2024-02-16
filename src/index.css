@@ -18,7 +18,18 @@ a:link {
   color: #9bc984;
 }
 
-/* visited link */
 a:visited {
   color: #9bc984;
+}
+
+h1 {
+  margin: 35px 0 15px;
+}
+
+h3 {
+  margin: 25px 0 10px;
+}
+
+p {
+  margin: 15px 0 5px;
 }

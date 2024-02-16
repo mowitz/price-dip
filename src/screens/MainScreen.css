@@ -1,6 +1,7 @@
 .MainScreen-graphContainer {
   background-color: #10040d;
-  margin: 16px -20px;
+  background-image: linear-gradient(#10040d, #12030e);
+  margin: 15px -20px 5px;
   padding: 30px 40px 20px 0;
 }
 

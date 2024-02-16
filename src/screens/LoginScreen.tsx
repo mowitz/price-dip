@@ -1,3 +1,5 @@
+import "./LoginScreen.css"
+
 import { useCallback, useMemo, useState } from "react"
 import Button from "../components/input/Button"
 import Screen from "../components/layout/Screen"
@@ -12,7 +14,6 @@ function LoginScreen() {
   const handleSetToken = useCallback(() => {
     if (token !== "") {
       localStorage.setItem("token", token ?? "")
-      console.log("Navigate...")
       navigate("/", { replace: true })
     }
   }, [navigate, token])
@@ -34,12 +35,14 @@ function LoginScreen() {
         </span>
         .
       </p>
-      <TextInput
-        value={token}
-        onChange={(value) => setToken(value)}
-      ></TextInput>
-      <Button disabled={token === ""} title="Spara" onClick={handleSetToken} />
-      <Button title="Glöm nyckeln" onClick={clearToken} />
+      <div className="LoginScreen-formContainer">
+        <TextInput
+          value={token}
+          onChange={(value) => setToken(value)}
+        ></TextInput>
+        <Button disabled={token === ""} title="Spara" onClick={handleSetToken} />
+        <Button title="Glöm nyckeln" onClick={clearToken} />
+      </div>
     </Screen>
   )
 }

@@ -10,7 +10,7 @@ type Props = {
 function RangeSlider({ range, unit, value, onChange }: Props) {
   return (
     <div className="RangeSlider">
-      <p>{`${range[0]} ${unit}`}</p>
+      {`${range[0]} ${unit}`}
       <input
         className="RangeSlider-slider"
         type="range"
@@ -19,7 +19,7 @@ function RangeSlider({ range, unit, value, onChange }: Props) {
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       ></input>
-      <p>{`${range[1]} ${unit}`}</p>
+      {`${range[1]} ${unit}`}
     </div>
   )
 }
